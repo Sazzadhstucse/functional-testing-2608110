@@ -100,7 +100,7 @@ def index():
 def health():
     return {
         "status": "ok",
-        "commit_sha": os.environ.get("COMMIT_SHA", "local"),
+        "commit_sha": os.environ.get("RENDER_GIT_COMMIT", "local"),
     }
 
 
