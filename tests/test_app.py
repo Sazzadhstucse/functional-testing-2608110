@@ -53,3 +53,15 @@ def test_health_endpoint():
 
     assert data["status"] == "ok"
     assert data["commit_sha"] == "local"
+
+def test_health_endpoint_returns_render_commit_sha(monkeypatch):
+    monkeypatch.setenv("RENDER_GIT_COMMIT", "test-commit-123")
+
+    client = web_app.app.test_client()
+    response = client.get("/health")
+
+    assert response.status_code == 200
+
+    data = json.loads(response.data)
+    assert data["status"] == "ok"
+    assert data["commit_sha"] == "test-commit-123"
