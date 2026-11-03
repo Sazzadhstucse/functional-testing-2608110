@@ -1,3 +1,4 @@
+
 name: Functional Testing CI
 
 on:
@@ -40,3 +41,64 @@ jobs:
         with:
           name: coverage-report-python-${{ matrix.python-version }}
           path: coverage.xml
+
+  deploy:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Render deployment
+        run: |
+          curl --fail --silent --show-error \
+            -X POST "$RENDER_DEPLOY_HOOK_URL"
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+
+  smoke-test:
+    needs: deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for expected commit deployment
+        env:
+          LIVE_APP_URL: ${{ vars.LIVE_APP_URL }}
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          for i in $(seq 1 60); do
+            ACTUAL_SHA=$(curl -fsS "$LIVE_APP_URL/health" |
+              python -c "import json,sys; print(json.load(sys.stdin).get('commit_sha',''))" || true)
+
+            if [ "$ACTUAL_SHA" = "$EXPECTED_SHA" ]; then
+              echo "Deployment verified: $ACTUAL_SHA"
+              break
+            fi
+
+            echo "Waiting for deployment... ($i/60)"
+            sleep 10
+          done
+
+          test "$ACTUAL_SHA" = "$EXPECTED_SHA"
+
+      - name: Smoke test homepage
+        run: |
+          curl --fail --silent --show-error "$LIVE_APP_URL/" > /dev/null
+        env:
+          LIVE_APP_URL: ${{ vars.LIVE_APP_URL }}
+
+      - name: Smoke test health endpoint
+        run: |
+          curl --fail --silent --show-error "$LIVE_APP_URL/health"
+        env:
+          LIVE_APP_URL: ${{ vars.LIVE_APP_URL }}
+
+      - name: Smoke test function execution
+        run: |
+          curl --fail --silent --show-error \
+            -X POST "$LIVE_APP_URL/" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data-urlencode "function=is_adult" \
+            --data-urlencode "args=[18]" | grep -q "True"
+        env:
+          LIVE_APP_URL: ${{ vars.LIVE_APP_URL }}
