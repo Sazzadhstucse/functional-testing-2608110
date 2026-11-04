@@ -96,10 +96,10 @@ The test suite covers all 16 functions in `target.py`.
 
 - Statement Coverage: 100%
 - Branch Coverage: 100%
-- Total Test Cases: 125 (including Flask application tests)
+- Total Test Cases: 128 (including Flask application tests)
 
 GitHub Actions runs the test suite using Python 3.10, 3.11, and 3.12.
-
+Live URL: https://functional-testing-2608110.onrender.com
 ## Continuous Integration and Deployment
 
 GitHub Actions is configured to run automatically on:
