@@ -65,3 +65,18 @@ def test_health_endpoint_returns_render_commit_sha(monkeypatch):
     data = json.loads(response.data)
     assert data["status"] == "ok"
     assert data["commit_sha"] == "test-commit-123"
+
+def test_invalid_function_name_returns_error():
+    client = web_app.app.test_client()
+
+    response = client.post(
+        "/",
+        data={
+            "function": "invalid_function",
+            "args": "[]"
+        }
+    )
+
+    assert response.status_code == 200
+    assert b"ValueError" in response.data
+    assert b"Unknown function" in response.data
