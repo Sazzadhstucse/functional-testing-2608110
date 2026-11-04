@@ -80,3 +80,18 @@ def test_invalid_function_name_returns_error():
     assert response.status_code == 200
     assert b"ValueError" in response.data
     assert b"Unknown function" in response.data
+
+def test_non_list_arguments_return_error():
+    client = web_app.app.test_client()
+
+    response = client.post(
+        "/",
+        data={
+            "function": "is_adult",
+            "args": "{}"
+        }
+    )
+
+    assert response.status_code == 200
+    assert b"ValueError" in response.data
+    assert b"Arguments must be a JSON list" in response.data
